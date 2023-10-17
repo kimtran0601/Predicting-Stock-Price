@@ -8,26 +8,31 @@ posts = {}
 list_of_urls = []
 
 run_posts_input = {
-        "scrapeLastNDays": 3,
-        "profiles": ["starbucks"]
+        "resultsPerPage": 250,
+        "profiles": ["target"]
 }
 
-posts_run = client.actor("clockworks/tiktok-scraper").call(run_input=run_posts_input)
+# posts_run = client.actor("clockworks/tiktok-scraper").call(run_input=run_posts_input)
 
-for item in client.dataset(posts_run["defaultDatasetId"]).iterate_items():
+"""for item in client.dataset(posts_run["defaultDatasetId"]).iterate_items():
     url = item["webVideoUrl"]
     posts[url] = {}
     posts[url]["timestamp"] = item["createTimeISO"]
     posts[url]["comments"] = []
-    list_of_urls.append(url)
+    list_of_urls.append(url)"""
+with open("data/tiktok_nike_posts.json") as data_file:
+    data = json.load(data_file)
+    for item in data:
+          list_of_urls.append(item["webVideoUrl"])
 
+print(list_of_urls)
 run_comments_input = {
         "postURLs": list_of_urls,
         "commentsPerPost": 100,
         "maxRepliesPerComment": 0
     }
 
-    # Run the Actor and wait for it to finish
+# Run the Actor and wait for it to finish
 comments_run = client.actor("clockworks/tiktok-comments-scraper").call(run_input=run_comments_input)
 
 for comment in client.dataset(comments_run["defaultDatasetId"]).iterate_items():
