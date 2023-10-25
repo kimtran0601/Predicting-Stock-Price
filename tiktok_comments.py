@@ -20,7 +20,7 @@ run_posts_input = {
     posts[url]["timestamp"] = item["createTimeISO"]
     posts[url]["comments"] = []
     list_of_urls.append(url)"""
-with open("data/tiktok_nike_posts.json") as data_file:
+with open("data/tiktok_target_posts.json") as data_file:
     data = json.load(data_file)
     for item in data:
           list_of_urls.append(item["webVideoUrl"])
@@ -40,5 +40,5 @@ for comment in client.dataset(comments_run["defaultDatasetId"]).iterate_items():
 
 print(posts)
 data = json.dumps(posts, indent=4)
-with open("data/starbucks_comments.json", "w") as outfile:
+with open("data/tiktok_target_comments.json", "w") as outfile:
         print(data, file=outfile)
