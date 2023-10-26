@@ -22,8 +22,9 @@ run_posts_input = {
     list_of_urls.append(url)"""
 with open("data/tiktok_target_posts.json") as data_file:
     data = json.load(data_file)
+    url_field = "webVideoUrl"
     for item in data:
-          list_of_urls.append(item["webVideoUrl"])
+          list_of_urls.append(item[url_field])
 
 print(list_of_urls)
 run_comments_input = {
