@@ -6,7 +6,7 @@ client = ApifyClient("apify_api_uSIyHxzUx667snZJ2mMDrSEU0Cxk6E0dmXHd")
 
 # Prepare the Actor input
 run_input = {
-    "directUrls": ["https://www.instagram.com/nike/"],
+    "directUrls": ["https://www.instagram.com/target/"],
     "resultsType": "posts",
     "resultsLimit": 50,
     "searchType": "user",
@@ -38,8 +38,8 @@ for comment in client.dataset(run_comments["defaultDatasetId"]).iterate_items():
 
 
 
-with open("nike_comments.json", "w") as outfile:
-    json.dumps(d, indent=4)
+with open("ig_target_comments.json", "w") as outfile:
+    json.dump(d, outfile, indent=4)
     
 print("\n")
 print(d)
