@@ -4,7 +4,7 @@ import emoji
 
 urls = dict()
 
-with open("data/startbucks_tiktok_comments.json") as data_file:
+with open("data/tiktok_raw_data/comments/tiktok_target_comments.json") as data_file:
     data = json.load(data_file)
 
     for post in data:
@@ -27,5 +27,5 @@ with open("data/startbucks_tiktok_comments.json") as data_file:
             
 
 formatted_data = json.dumps(urls, indent=4)
-with open("data/starbucks_comments.json", "w") as outfile:
+with open("data/target_full_comments_cleaned.json", "w") as outfile:
         print(formatted_data, file=outfile)
