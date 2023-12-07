@@ -1,22 +1,27 @@
 from apify_client import ApifyClient
 import json
 
-# Initialize the ApifyClient with your API token
+# initialize the ApifyClient with your API token
 client = ApifyClient("apify_api_uSIyHxzUx667snZJ2mMDrSEU0Cxk6E0dmXHd")
 
-# Prepare the Actor input
+# fields
+company = "target"
+
+# prepare the post web scraper for instagram
 run_input = {
-    "directUrls": ["https://www.instagram.com/target/"],
+    "directUrls": ["https://www.instagram.com/{company}/"],
     "resultsType": "posts",
-    "resultsLimit": 50,
+    "resultsLimit": 1,
     "searchType": "user",
 }
 
-# Run the Actor and wait for it to finish
+# Run the posts actor and wait for it to finish
 run = client.actor("apify/instagram-api-scraper").call(run_input=run_input)
 
-d = {}
-l = []
+d = {} # maps url to comments and timestamp
+l = [] # list of urls
+
+# iterates through posts and saves url and timestamp
 for item in client.dataset(run["defaultDatasetId"]).iterate_items():
     url = item["url"]
     d[url] = {}
@@ -24,22 +29,20 @@ for item in client.dataset(run["defaultDatasetId"]).iterate_items():
     d[url]["comments"] = []
     l.append(url)
 
+# inputs for comments scraper
 run_comments_input = {
     "directUrls": l,
-    "resultsLimit": 50,
+    "resultsLimit": 1,
 }
 
+# run comments scraper
 run_comments = client.actor("apify/instagram-comment-scraper").call(run_input=run_comments_input)
 
-
+# appends the comment to the corresponding url mapping
 for comment in client.dataset(run_comments["defaultDatasetId"]).iterate_items():
     print(comment)
     d[comment["postUrl"]]["comments"].append(comment["text"])
 
-
-
-with open("ig_target_comments.json", "w") as outfile:
+# prints data to a json file
+with open("ig_{}_comments.json".format(company), "w") as outfile:
     json.dump(d, outfile, indent=4)
-    
-print("\n")
-print(d)
