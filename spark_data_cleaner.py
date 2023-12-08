@@ -1,69 +1,60 @@
+import time 
+# Record the start time
+start_time = time.time()
+
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, explode, to_date, collect_list, regexp_replace
+from pyspark.sql.functions import collect_list, concat_ws, col, to_date
 import os
-import time
 
-def readAndCleanData(spark, path):
-    # Read JSON data into a Spark DataFrame
-    df = spark.read.json(path)
+# Initialize Spark Session
+spark = SparkSession.builder \
+    .appName("Merging Comments") \
+    .getOrCreate()
 
-    # Explode the comments array into individual rows
-    df = df.withColumn("comment", explode(col("comments")))
+# Define input and output folders
+input_folder = "csv_data"
+output_folder = "merged_data"
 
-    # Convert timestamp to date and remove non-alphanumeric characters from comments
-    df = df.withColumn("date", to_date("timestamp", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")) \
-           .withColumn("comment", regexp_replace(col("comment"), "[^a-zA-Z0-9\\s]", ""))
+# Define the list of company names
+companies = ["starbucks", "target", "nike"]
 
-    # Group by date and collect comments into a list
-    df = df.groupBy("date").agg(collect_list("comment").alias("comments"))
 
-    return df
+# Iterate through companies
+for company_name in companies:
+    # Read CSV files for the current company
+    df_list = []
+    for root, dirs, files in os.walk(input_folder):
+        for filename in files:
+            if filename.endswith(".csv") and company_name in filename:
+                input_path = os.path.join(root, filename)
 
-def saveData(df, company, output_folder, output_format):
-    # Create the output folder if it doesn't exist
-    output_path = os.path.join(output_folder, f"{company}_Merged.{output_format}")
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+                # Read CSV and select relevant columns
+                df = spark.read.option("header", "true").csv(input_path)
+                df = df.select("Date", "Comment")
 
-    # Save DataFrame in the specified format
-    if output_format == "csv":
-        df.write.option("header", "true").csv(output_path)
+                df_list.append(df)
 
-def processCompanies(spark, companies):
-    for company in companies:
-        # Define paths for Instagram and TikTok data
-        ig_path = f"raw_data/instagram/ig_{company}_comments.json"
-        tt_path = f"raw_data/tiktok/tt_{company}_comments.json"
+    # Concatenate DataFrames for the current company
+    if df_list:
+        merged_df = df_list[0]
+        for i in range(1, len(df_list)):
+            merged_df = merged_df.union(df_list[i])
 
-        # Read and clean both datasets
-        ig_df = readAndCleanData(spark, ig_path)
-        tt_df = readAndCleanData(spark, tt_path)
+        # Group by date and aggregate comments
+        merged_df = merged_df.groupBy("Date").agg(concat_ws(", ", collect_list("Comment")).alias("Comment"))
 
-        # Merge Instagram and TikTok data
-        all_data_df = ig_df.union(tt_df)
+        # Save the merged DataFrame as a CSV file
+        output_path = f"{output_folder}/{company_name}_merged_comments.csv"
+        merged_df.write.option("header", "true").csv(output_path)
 
-        # Save data in CSV format in specified folders
-        saveData(all_data_df, company, "CleanedAndMergedData", "csv")
-        saveData(all_data_df, company, "SentimentAnalysis", "csv")
+        print(f"Merged comments for {company_name} saved to {output_path}")
 
-def main():
-    # Start measuring time
-    start_time = time.time()
+# Stop the Spark Session
+spark.stop()
 
-    # Initialize a Spark session
-    spark = SparkSession.builder.appName("SocialMediaCommentsProcessing").getOrCreate()
+# Record the end time
+end_time = time.time()
 
-    # List of companies
-    companies = ["Starbucks", "Target", "Nike"]
-    processCompanies(spark, companies)
-
-    # Stop the Spark session
-    spark.stop()
-
-    # Calculate and print execution duration
-    end_time = time.time()
-    duration = end_time - start_time
-    print(f"Execution time: {duration:.2f} seconds")
-
-if __name__ == '__main__':
-    main()
+# Calculate and print the execution time
+execution_time = end_time - start_time
+print(f"Execution Time: {execution_time} seconds")
